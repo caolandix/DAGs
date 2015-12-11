@@ -8,8 +8,10 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    dagraph.cpp
+    dagraph.cpp \
+    tarjandag.cpp
 
 HEADERS += \
-    dagraph.h
+    dagraph.h \
+    tarjandag.h
 
