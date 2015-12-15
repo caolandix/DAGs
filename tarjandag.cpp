@@ -1,91 +1,93 @@
 #include "tarjandag.h"
 
 
-TarjanDAG::TarjanDAG(int V) {
-    this->V = V;
-    adj = new list<int>[V];
+TarjanDAG::TarjanDAG(const int numVertices) {
+    m_numVertices = numVertices;
+    m_adjList = new list<int>[m_numVertices];
 }
 
 void TarjanDAG::addEdge(int v, int w) {
-    adj[v].push_back(w);
+    m_adjList[v].push_back(w);
 }
 
 // A recursive function that finds and prints strongly connected
 // components using DFS traversal
-// u --> The vertex to be visited next
-// disc[] --> Stores discovery times of visited vertices
-// low[] -- >> earliest visited vertex (the vertex with minimum
+// nextVertex --> The vertex to be visited next
+// discTimes[] --> Stores discovery times of visited vertices
+// earliestVertex[] -- >> earliest visited vertex (the vertex with minimum
 //             discovery time) that can be reached from subtree
 //             rooted with current vertex
-// *st -- >> To store all the connected ancestors (could be part
+// *pConnectedAncestors -- >> To store all the connected ancestors (could be part
 //           of SCC)
 // stackMember[] --> bit/index array for faster check whether
 //                  a node is in stack
-void TarjanDAG::SCCUtil(int u, int disc[], int low[], stack<int> *st, bool stackMember[]) {
-    // A static variable is used for simplicity, we can avoid use
-    // of static variable by passing a pointer.
+void TarjanDAG::SCCUtil(int nextVertex, int discTimes[], int earliestVertex[], stack<int> *pConnectedAncestors, bool nodeinStack[]) {
+
+    // A static variable is used for simplicity, we can avoid use of static variable by passing a pointer.
     static int time = 0;
 
     // Initialize discovery time and low value
-    disc[u] = low[u] = ++time;
-    st ->push(u);
-    stackMember[u] = true;
+    discTimes[nextVertex] = earliestVertex[nextVertex] = ++time;
+    pConnectedAncestors ->push(nextVertex);
+    nodeinStack[nextVertex] = true;
 
     // Go through all vertices adjacent to this
-    for (list<int>::iterator i = adj[u].begin(); i != adj[u].end(); ++i) {
-        int v = *i;  // v is current adjacent of 'u'
+    for (list<int>::iterator iter = m_adjList[nextVertex].begin(); iter != m_adjList[nextVertex].end(); ++iter) {
+        int currVertex = *iter;  // v is current adjacent of 'u'
 
         // If v is not visited yet, then recur for it
-        if (disc[v] == -1) {
-            SCCUtil(v, disc, low, st, stackMember);
+        if (discTimes[currVertex] == -1) {
+            SCCUtil(currVertex, discTimes, earliestVertex, pConnectedAncestors, nodeinStack);
 
             // Check if the subtree rooted with 'v' has a
             // connection to one of the ancestors of 'u'
             // Case 1 (per above discussion on Disc and Low value)
-            low[u]  = min(low[u], low[v]);
+            earliestVertex[nextVertex]  = min(earliestVertex[nextVertex], earliestVertex[currVertex]);
         }
 
-        // Update low value of 'u' only of 'v' is still in stack
+        // Update low value of 'u' only of 'currVertex' is still in stack
         // (i.e. it's a back edge, not cross edge).
         // Case 2 (per above discussion on Disc and Low value)
-        else if (stackMember[v])
-            low[u] = min(low[u], disc[v]);
+        else {
+            if (nodeinStack[currVertex])
+                earliestVertex[nextVertex] = min(earliestVertex[nextVertex], discTimes[currVertex]);
+        }
     }
 
     // head node found, pop the stack and print an SCC
     int w = 0;  // To store stack extracted vertices
-    if (low[u] == disc[u]) {
-        while (st ->top() != u) {
-            w = (int) st->top();
+    if (earliestVertex[nextVertex] == discTimes[nextVertex]) {
+        while (pConnectedAncestors ->top() != nextVertex) {
+            w = (int)pConnectedAncestors ->top();
             cout << w << " ";
-            stackMember[w] = false;
-            st ->pop();
+            nodeinStack[w] = false;
+            pConnectedAncestors ->pop();
         }
-        w = (int) st ->top();
+        w = (int) pConnectedAncestors ->top();
         cout << w << "\n";
-        stackMember[w] = false;
-        st ->pop();
+        nodeinStack[w] = false;
+        pConnectedAncestors ->pop();
     }
 }
 
 // The function to do DFS traversal. It uses SCCUtil()
 void TarjanDAG::SCC() {
-    int *disc = new int[V];
-    int *low = new int[V];
-    bool *stackMember = new bool[V];
-    stack<int> *st = new stack<int>();
+    int *pDiscTimes = new int[m_numVertices];
+    int *pEarliestVertex = new int[m_numVertices];
+    stack<int> *pConnectedAncestors = new stack<int>();
+    bool *pNodeinStack = new bool[m_numVertices];
 
     // Initialize disc and low, and stackMember arrays
-    for (int i = 0; i < V; i++) {
-        disc[i] = NIL;
-        low[i] = NIL;
-        stackMember[i] = false;
+    for (int i = 0; i < m_numVertices; i++) {
+        pDiscTimes[i] = NIL;
+        pEarliestVertex[i] = NIL;
+        pNodeinStack[i] = false;
     }
 
     // Call the recursive helper function to find strongly
     // connected components in DFS tree with vertex 'i'
-    for (int i = 0; i < V; i++) {
-        if (disc[i] == NIL)
-            SCCUtil(i, disc, low, st, stackMember);
+    for (int i = 0; i < m_numVertices; i++) {
+        if (pDiscTimes[i] == NIL)
+            SCCUtil(i, pDiscTimes, pEarliestVertex, pConnectedAncestors, pNodeinStack);
     }
 }
